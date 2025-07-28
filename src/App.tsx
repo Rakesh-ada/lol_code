@@ -181,8 +181,8 @@ function App() {
         <div className="w-full max-w-md">
           <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl hover:bg-white/10 transition-all duration-500 hover:border-blue-400/30">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 mb-4 shadow-lg shadow-blue-500/25">
-                <Code className="w-8 h-8 text-white" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 mb-4 shadow-lg shadow-blue-500/25 text-3xl">
+                😂
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">LOL Code</h1>
               <p className="text-blue-200/80">Ask programming questions, get code-only answers</p>
