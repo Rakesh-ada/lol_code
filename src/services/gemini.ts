@@ -47,6 +47,9 @@ Question: ${question}`;
 
 function detectLanguage(code: string): string {
   // Simple language detection based on common patterns
+  if (code.includes('<-') || code.includes('function(') || code.includes('return(')) {
+    return 'r';
+  }
   if (code.includes('def ') || code.includes('import ') || code.includes('print(')) {
     return 'python';
   }
