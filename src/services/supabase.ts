@@ -3,11 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please set up Supabase connection.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 export interface QAPair {
   id: string;
@@ -21,6 +19,10 @@ export interface QAPair {
 }
 
 export async function fetchQAPairs(): Promise<QAPair[]> {
+  if (!supabase) {
+    throw new Error('Supabase not configured. Please connect to Supabase first.');
+  }
+
   const { data, error } = await supabase
     .from('qa_pairs')
     .select('*')
@@ -36,6 +38,10 @@ export async function fetchQAPairs(): Promise<QAPair[]> {
 }
 
 export async function insertQAPair(qaPair: Omit<QAPair, 'id' | 'created_at' | 'expires_at'>): Promise<QAPair> {
+  if (!supabase) {
+    throw new Error('Supabase not configured. Please connect to Supabase first.');
+  }
+
   const { data, error } = await supabase
     .from('qa_pairs')
     .insert([qaPair])
@@ -51,6 +57,10 @@ export async function insertQAPair(qaPair: Omit<QAPair, 'id' | 'created_at' | 'e
 }
 
 export async function subscribeToQAPairs(callback: (qaPairs: QAPair[]) => void) {
+  if (!supabase) {
+    throw new Error('Supabase not configured. Please connect to Supabase first.');
+  }
+
   // Initial fetch
   const initialData = await fetchQAPairs();
   callback(initialData);

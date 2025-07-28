@@ -49,7 +49,11 @@ function App() {
         });
       } catch (error) {
         console.error('Error setting up subscription:', error);
-        showToast('Failed to connect to database', 'error');
+        if (error instanceof Error && error.message.includes('Supabase not configured')) {
+          showToast('Please connect to Supabase to use the shared Q&A feed', 'info');
+        } else {
+          showToast('Failed to connect to database', 'error');
+        }
         setIsLoading(false);
       }
     };
