@@ -242,7 +242,7 @@ function App() {
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">LOL !! You Can't Code</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">LOL! You Can't Code</h1>
           <p className="text-blue-200/80">Welcome back, <span className="text-blue-300 font-semibold">{userName}</span></p>
         </div>
 
