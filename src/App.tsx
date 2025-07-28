@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Code, Send, User, ChevronDown, ChevronUp, Check, X, Copy } from 'lucide-react';
 import { generateCodeResponse } from './services/gemini';
-
-interface QAPair {
-  id: string;
-  question: string;
-  code?: string;
-  answer: string;
-  language: string;
-  userName: string;
-  timestamp: number;
-  expanded: boolean;
-}
+import { QAPair, fetchQAPairs, insertQAPair, subscribeToQAPairs } from './services/supabase';
 
 interface Toast {
   id: string;
   message: string;
   type: 'success' | 'error' | 'info';
+}
+
+interface ExtendedQAPair extends QAPair {
+  expanded: boolean;
 }
 
 function App() {
@@ -26,10 +20,8 @@ function App() {
   const [code, setCode] = useState('');
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [qaPairs, setQaPairs] = useState<QAPair[]>(() => {
-    const saved = localStorage.getItem('qaPairs');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [qaPairs, setQaPairs] = useState<ExtendedQAPair[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const copyToClipboard = async (code: string) => {
@@ -41,10 +33,39 @@ function App() {
     }
   };
 
-  // Save Q&A pairs to localStorage whenever they change
+  // Subscribe to real-time Q&A pairs from Supabase
   useEffect(() => {
-    localStorage.setItem('qaPairs', JSON.stringify(qaPairs));
-  }, [qaPairs]);
+    let unsubscribe: (() => void) | undefined;
+
+    const setupSubscription = async () => {
+      try {
+        unsubscribe = await subscribeToQAPairs((data) => {
+          const extendedData = data.map(pair => ({
+            ...pair,
+            expanded: false
+          }));
+          setQaPairs(extendedData);
+          setIsLoading(false);
+        });
+      } catch (error) {
+        console.error('Error setting up subscription:', error);
+        if (error instanceof Error && error.message.includes('Supabase not configured')) {
+          showToast('Please connect to Supabase to use the shared Q&A feed', 'info');
+        } else {
+          showToast('Failed to connect to database', 'error');
+        }
+        setIsLoading(false);
+      }
+    };
+
+    setupSubscription();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
 
   // Load saved username on app start
   useEffect(() => {
@@ -53,21 +74,6 @@ function App() {
       setUserName(savedUserName);
       setIsWelcomeScreen(false);
     }
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setQaPairs(prevPairs => {
-        const now = Date.now();
-        const filtered = prevPairs.filter(pair => now - pair.timestamp < 3 * 60 * 60 * 1000);
-        if (filtered.length !== prevPairs.length) {
-          showToast('Question expired and removed from feed', 'info');
-        }
-        return filtered;
-      });
-    }, 60000); // Check every minute
-
-    return () => clearInterval(interval);
   }, []);
 
   const showToast = (message: string, type: Toast['type']) => {
@@ -99,25 +105,34 @@ function App() {
       // Generate AI response using Gemini
       const aiResponse = await generateCodeResponse(question.trim(), code.trim() || undefined);
       
-      const newQAPair: QAPair = {
-        id: Math.random().toString(36).substr(2, 9),
+      // Save to Supabase
+      await insertQAPair({
         question: question.trim(),
         code: code.trim() || undefined,
         answer: aiResponse.code,
         language: aiResponse.language,
-        userName,
-        timestamp: Date.now(),
-        expanded: false
-      };
+        user_name: userName
+      });
 
-      setQaPairs(prev => [newQAPair, ...prev]);
       setQuestion('');
       setCode('');
       setShowCodeEditor(false);
-      showToast('AI answer generated successfully!', 'success');
+      showToast('Question posted to shared feed!', 'success');
+      
+      // Force refresh the feed after successful insertion
+      try {
+        const updatedData = await fetchQAPairs();
+        const extendedData = updatedData.map(pair => ({
+          ...pair,
+          expanded: false
+        }));
+        setQaPairs(extendedData);
+      } catch (error) {
+        console.error('Error refreshing feed:', error);
+      }
     } catch (error) {
       console.error('Error generating response:', error);
-      showToast('Failed to generate answer. Please try again.', 'error');
+      showToast('Failed to post question. Please try again.', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -130,9 +145,9 @@ function App() {
   };
 
   const formatTimeRemaining = (timestamp: number) => {
-    const now = Date.now();
-    const elapsed = now - timestamp;
-    const remaining = (3 * 60 * 60 * 1000) - elapsed;
+    const now = new Date().getTime();
+    const expiresAt = new Date(timestamp).getTime();
+    const remaining = expiresAt - now;
     
     if (remaining <= 0) return '⏳ Expired';
     
@@ -296,7 +311,12 @@ function App() {
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-white mb-4">Live Q&A Feed</h2>
           
-          {qaPairs.length === 0 ? (
+          {isLoading ? (
+            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+              <div className="w-8 h-8 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-blue-200/70">Loading shared Q&A feed...</p>
+            </div>
+          ) : qaPairs.length === 0 ? (
             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
               <Code className="w-12 h-12 text-blue-400/50 mx-auto mb-4" />
               <p className="text-blue-200/70">No questions yet. Be the first to ask!</p>
@@ -310,9 +330,9 @@ function App() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-blue-300 font-medium">{pair.userName}</span>
+                      <span className="text-blue-300 font-medium">{pair.user_name}</span>
                       <span className="text-xs px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded-full text-blue-200">
-                        {formatTimeRemaining(pair.timestamp)}
+                        {formatTimeRemaining(pair.expires_at)}
                       </span>
                     </div>
                     <p className="text-white mb-3">{pair.question}</p>
