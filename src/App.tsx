@@ -184,7 +184,7 @@ function App() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 mb-4 shadow-lg shadow-blue-500/25">
                 <Code className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">Code Q&A Assistant</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">LOL Code</h1>
               <p className="text-blue-200/80">Ask programming questions, get code-only answers</p>
             </div>
 
@@ -242,7 +242,7 @@ function App() {
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">LOL!! 🤣🤣 You Can't Code</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">LOL!! You Can't Code</h1>
           <p className="text-blue-200/80">Welcome back, <span className="text-blue-300 font-semibold">{userName}</span></p>
         </div>
 
