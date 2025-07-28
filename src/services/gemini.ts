@@ -47,10 +47,11 @@ Question: ${question}`;
 
 function detectLanguage(code: string): string {
   // Simple language detection based on common patterns
-  if (code.includes('<-') || code.includes('function(') || code.includes('return(')) {
+  if (code.includes('<-') && (code.includes('function(') || code.includes('return('))) {
     return 'r';
   }
-  if (code.includes('def ') || code.includes('import ') || code.includes('print(')) {
+  if (code.includes('def ') || code.includes('import ') || code.includes('print(') || 
+      code.includes('for ') && code.includes(' in ') || code.includes('if ') && code.includes(':')) {
     return 'python';
   }
   if (code.includes('function ') || code.includes('const ') || code.includes('let ') || code.includes('console.log')) {
@@ -73,6 +74,15 @@ function detectLanguage(code: string): string {
   }
   if (code.includes('using System') || code.includes('Console.WriteLine') || code.includes('public static void Main')) {
     return 'csharp';
+  }
+  if (code.includes('SELECT ') || code.includes('INSERT ') || code.includes('UPDATE ') || code.includes('DELETE ')) {
+    return 'sql';
+  }
+  if (code.includes('<html') || code.includes('<!DOCTYPE') || code.includes('<div')) {
+    return 'html';
+  }
+  if (code.includes('.class') || code.includes('#id') || code.includes('display:') || code.includes('color:')) {
+    return 'css';
   }
   
   // Default fallback
