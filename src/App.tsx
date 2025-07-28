@@ -118,6 +118,18 @@ function App() {
       setCode('');
       setShowCodeEditor(false);
       showToast('Question posted to shared feed!', 'success');
+      
+      // Force refresh the feed after successful insertion
+      try {
+        const updatedData = await fetchQAPairs();
+        const extendedData = updatedData.map(pair => ({
+          ...pair,
+          expanded: false
+        }));
+        setQaPairs(extendedData);
+      } catch (error) {
+        console.error('Error refreshing feed:', error);
+      }
     } catch (error) {
       console.error('Error generating response:', error);
       showToast('Failed to post question. Please try again.', 'error');

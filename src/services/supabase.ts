@@ -68,16 +68,21 @@ export async function subscribeToQAPairs(callback: (qaPairs: QAPair[]) => void) 
   // Subscribe to real-time changes
   const subscription = supabase
     .channel('qa_pairs_changes')
-    .on('postgres_changes', 
-      { 
-        event: '*', 
-        schema: 'public', 
-        table: 'qa_pairs' 
-      }, 
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'qa_pairs'
+      },
       async () => {
         // Refetch data when changes occur
-        const updatedData = await fetchQAPairs();
-        callback(updatedData);
+        try {
+          const updatedData = await fetchQAPairs();
+          callback(updatedData);
+        } catch (error) {
+          console.error('Error refetching data:', error);
+        }
       }
     )
     .subscribe();
